@@ -9,3 +9,6 @@ TARGET_LINK_LIBRARIES(readtag tag)
 
 ADD_EXECUTABLE(test test.cpp tag_functions.cpp trie.cpp database_functions.cpp misc.cpp)
 TARGET_LINK_LIBRARIES(test tag sqlite3)
+
+ADD_LIBRARY(for_ffi SHARED tag_functions.cpp trie.cpp database_functions.cpp misc.cpp)
+TARGET_LINK_LIBRARIES(for_ffi tag sqlite3)
