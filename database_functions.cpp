@@ -40,43 +40,27 @@ int createDatabase(const char *db_path) {
 }
 
 int createTables(sqlite3 *db) {
-    int rc;
+    int rc, i;
     char *error_message;
-    rc = sqlite3_exec(db, CREATE_ALBUMS, NULL, NULL, &error_message);
-    if (rc != SQLITE_OK) {
-        log("Unable to create Albums table: %s\n", error_message);
-        sqlite3_free(error_message);
-        return -1;
-    }
+    const char *k_create[] = {
+        "CREATE TABLE Albums ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	title VARCHAR(512), 	album_art_location VARCHAR(2048) );",
+        "CREATE TABLE Songs ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	title VARCHAR(512), 	track_number INTEGER, 	disc_number INTEGER, 	rating SMALLINT DEFAULT 0, 	album_id INTEGER, 	location VARCHAR(2048), 	FOREIGN KEY (album_id) REFERENCES Albums(id) );",
+        "CREATE TABLE Artists ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	name VARCHAR(512), 	description VARCHAR(1024), 	photo_location VARCHAR(2048) );",
+        "CREATE TABLE Genres ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	name VARCHAR(128) );",
+        "CREATE TABLE ContributingArtists ( 	song_id INTEGER, 	artist_id INTEGER, 	PRIMARY KEY (song_id, artist_id), 	FOREIGN KEY (song_id) REFERENCES Songs(id), 	FOREIGN KEY (artist_id) REFERENCES Artists(id) );",
+        "CREATE TABLE AlbumArtists ( 	album_id INTEGER, 	artist_id INTEGER, 	PRIMARY KEY (album_id, artist_id), 	FOREIGN KEY (album_id) REFERENCES Albums(id), 	FOREIGN KEY (artist_id) REFERENCES Artists(id) );",
+        "CREATE TABLE SongGenreMap ( 	song_id INTEGER, 	genre_id INTEGER, 	PRIMARY KEY (song_id, genre_id), 	FOREIGN KEY (song_id) REFERENCES Songs(id), 	FOREIGN KEY (genre_id) REFERENCES Genres(id) );",
+        "CREATE TABLE Playlists ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	title VARCHAR(512) );",
+        "CREATE TABLE PlaylistSongs ( 	id INTEGER PRIMARY KEY AUTOINCREMENT, 	playlist_id INTEGER, 	song_id INTEGER, 	FOREIGN KEY (playlist_id) REFERENCES Playlists(id), 	FOREIGN KEY (song_id) REFERENCES Songs(id) );"
+    };
 
-    rc = sqlite3_exec(db, CREATE_SONGS, NULL, NULL, &error_message);
-    if (rc != SQLITE_OK) {
-        log("Unable to create Songs table: %s\n", error_message);
-        sqlite3_free(error_message);
-        return -1;
+    for (i = 0; i < 9; i++) {
+        rc = sqlite3_exec(db, k_create[i], NULL, NULL, &error_message);
+        if (rc != SQLITE_OK) {
+            log("Error while creating table %d: %s\n", i, error_message);
+            sqlite3_free(error_message);
+        }
     }
-
-    rc = sqlite3_exec(db, CREATE_ARTISTS, NULL, NULL, &error_message);
-    if (rc != SQLITE_OK) {
-        log("Unable to create Artists table: %s\n", error_message);        
-        sqlite3_free(error_message);
-        return -1;
-    }
-
-    rc = sqlite3_exec(db, CREATE_CONTRIBUTING_ARTISTS, NULL, NULL, &error_message);
-    if (rc != SQLITE_OK) {
-        log("Unable to create ContributingArtists table: %s\n", error_message);
-        sqlite3_free(error_message);
-        return -1;
-    }
-
-    rc = sqlite3_exec(db, CREATE_ALBUM_ARTISTS, NULL, NULL, &error_message);
-    if (rc != SQLITE_OK) {
-        log("Unable to create AlbumArtists table: %s\n", error_message);        
-        sqlite3_free(error_message);
-        return -1;
-    }
-
     return 0;
 }
 
@@ -152,6 +136,7 @@ int getEntityId(sqlite3 *db, EntityType entity_type, const std::string &entity_n
 
     return entity_id;
 }
+
 
 /**
  * Internal callback for getArtistId.
